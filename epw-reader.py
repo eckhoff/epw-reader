@@ -15,9 +15,6 @@ def read_epw_to_dataframe(epw_file_path):
     df.columns = ['Year', 'Month', 'Day', 'Hour', 'Temperature (°C)']
     df[['Temperature (°C)']] = df[['Temperature (°C)']].apply(pd.to_numeric, errors='coerce')
     df['Temperature (°F)'] = df['Temperature (°C)'] * 9/5 + 32
-    df['Temp < 25°F'] = (df['Temperature (°F)'] <= 23).astype(int)
-    df['25 to 35'] = ((df['Temperature (°F)'] > 23) & (df['Temperature (°F)'] <= 38)).astype(int)
-    df['35 to 45'] = 0
 
     return df
 
@@ -41,18 +38,24 @@ def write_to_excel(df, excel_file_path):
             formula = f'=IF(F{row_num}<=Bins!A1, 1, 0)'
             worksheet.write_formula(cell_reference, formula)
         worksheet.write_formula('G8762', 'sum(G2:G8761)')
+        worksheet.write('G1', '="Less than "&Bins!A1')
+
         # Add an Excel formula to the '25 to 35' column
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'H{row_num}'  # Column H, current row
             formula = f'=IF(AND(F{row_num}>Bins!A1, F{row_num}<=Bins!A2), 1, 0)'
             worksheet.write_formula(cell_reference, formula)
         worksheet.write_formula('H8762', 'sum(H2:H8761)')
+        worksheet.write('H1', '=Bins!A1&" to "&Bins!A2')
+
         # Add an Excel formula to the '35 to 45' column
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'I{row_num}'  # Column I, current row
             formula = f'=IF(AND(F{row_num}>Bins!A2, F{row_num}<=Bins!A3), 1, 0)'
             worksheet.write_formula(cell_reference, formula)
         worksheet.write_formula('I8762', 'sum(I2:I8761)')
+        worksheet.write('I1', '=Bins!A2&" to "&Bins!A3')
+
 
 epw_file_path = 'USA_KS_Hutchinson.Muni.AP.724506_TMY3.epw'
 excel_file_path = 'output_file.xlsx'
