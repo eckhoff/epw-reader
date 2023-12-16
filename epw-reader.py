@@ -48,38 +48,77 @@ def write_to_excel(df, excel_file_path):
         worksheet_bins = workbook.add_worksheet('Bins')
         worksheet_sheet1 = workbook.add_worksheet('Sheet1')
 
+        # Write the default user input to include or exclude weekends from calculation
+        worksheet_sheet1.write('A1', 'Include Weekends?')
         worksheet_sheet1.write('A2', 'No')
-        worksheet_sheet1.write('C3', 1)
-        worksheet_sheet1.write('D3', 24)
 
-        # Specify the values for cells A1 to I1 in the "Bins" sheet
+        # Write the default user input to specify occupied hours
+        worksheet_sheet1.write('A4', 'Occupied Hours')
+        worksheet_sheet1.write('A5', 'Start')
+        worksheet_sheet1.write('B5', 'End')
+        worksheet_sheet1.write('A6', 1)
+        worksheet_sheet1.write('B6', 24)
+
+        # Write the default user input for including breaks
+        worksheet_sheet1.write('A8', 'Date Range to Exclude')
+        worksheet_sheet1.write('A9', 'Start')
+        worksheet_sheet1.write('B9', 'End')
+        worksheet_sheet1.write('A10', '5/15')
+        worksheet_sheet1.write('B10', '8/15')
+
+        # Write the Main spreadsheet output
+        worksheet_sheet1.write('E1', 'Temp Ranges')
+        worksheet_sheet1.write('F1', '# of Hours')
+        worksheet_sheet1.write('G1', '% of Hours')
+        worksheet_sheet1.write_formula('E2', '="Less than "&I2')
+        worksheet_sheet1.write_formula('E3', '=I2&" to "&J2')
+        worksheet_sheet1.write_formula('E4', '=J2&" to "&K2')
+        worksheet_sheet1.write_formula('E5', '=K2&" to "&L2')
+        worksheet_sheet1.write_formula('E6', '=L2&" to "&M2')
+        worksheet_sheet1.write_formula('E7', '=M2&" to "&N2')
+        worksheet_sheet1.write_formula('E8', '=N2&" to "&O2')
+        worksheet_sheet1.write_formula('E9', '=O2&" to "&P2')
+        worksheet_sheet1.write_formula('E10', '=P2&" to "&Q2')
+        worksheet_sheet1.write_formula('E11', '="Greater than "&Q2')
+        # Write total number of hours in each bin to results
+        for i in range(2,12):
+            worksheet_sheet1.write_formula(f'F{i}', f'=Bins!C{i}')
+        # Write % of hours in each bin to results
+        for i in range(2,12):
+            worksheet_sheet1.write_formula(f'G{i}', f'=IF(sum(\'Raw Data\'!L2:L8761) <> sum(F2:F11), "ERROR", F{i}/sum(F2:F11))')
+
+        # Specify the values for cells I2 to Q2 in the "Sheet1"
         bin_values = [25, 35, 45, 55, 65, 75, 85, 95, 105]
-        worksheet_bins.write_column('A1', bin_values)
-        # Sum the number of hours <= 25F
-        worksheet_bins.write_formula('B1', '=SUMIFS(\'Raw Data\'!G2:\'Raw Data\'!G8761,\'Raw Data\'!F2:F8761,"<="&A1)')
-        # Sum the number of hours > 25F & <= 35
-        worksheet_bins.write_formula('B2', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A1,\'Raw Data\'!F2:F8761,"<="&A2)')
-        # Sum the number of hours > 35F & <= 45
-        worksheet_bins.write_formula('B3', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A2,\'Raw Data\'!F2:F8761,"<="&A3)')
-        # Sum the number of hours > 45F & <= 55
-        worksheet_bins.write_formula('B4', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A3,\'Raw Data\'!F2:F8761,"<="&A4)')
-        # Sum the number of hours > 55F & <= 65
-        worksheet_bins.write_formula('B5', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A4,\'Raw Data\'!F2:F8761,"<="&A5)')
-        # Sum the number of hours > 65F & <= 75
-        worksheet_bins.write_formula('B6', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A5,\'Raw Data\'!F2:F8761,"<="&A6)')
-        # Sum the number of hours > 75F & <= 85
-        worksheet_bins.write_formula('B7', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A6,\'Raw Data\'!F2:F8761,"<="&A7)')
-        # Sum the number of hours > 85F & <= 95
-        worksheet_bins.write_formula('B8', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A7,\'Raw Data\'!F2:F8761,"<="&A8)')
-        # Sum the number of hours > 95F & <= 1055
-        worksheet_bins.write_formula('B9', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A8,\'Raw Data\'!F2:F8761,"<="&A9)')
-        # Sum the number of hours > 105F
-        worksheet_bins.write_formula('B10', '=SUMIFS(\'Raw Data\'!G2:G8761,\'Raw Data\'!F2:F8761,">"&A9)')
+        bin_columns = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q']
+        worksheet_sheet1.write_row('I2', bin_values)
+        # Copy bin values to "Bins" sheet
+        for row_num in range(2, len(bin_values) + 2):
+            cell_reference = f'A{row_num}'  # Column A, current row
+            new_col = bin_columns[row_num - 2]
+            formula = f'=Sheet1!{new_col}2'
+            worksheet_bins.write_formula(cell_reference, formula)
+        worksheet_bins.write('B1', '24H/365D')
+        worksheet_bins.write('C1', 'Output')
 
+        # Sum the number of hours <= 25F for 24H/365D data
+        worksheet_bins.write_formula('B2', '=SUMIFS(\'Raw Data\'!H2:\'Raw Data\'!H8761,\'Raw Data\'!F2:F8761,"<="&A2)')
+        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for 24H/365D data
+        for i in range(3,11):
+            worksheet_bins.write_formula(f'B{i}', f'=SUMIFS(\'Raw Data\'!H2:H8761,\'Raw Data\'!F2:F8761,">"&A{i-1},\'Raw Data\'!F2:F8761,"<="&A{i})')
+        # Sum the number of hours > 105F for 24H/365D data
+        worksheet_bins.write_formula('B11', '=SUMIFS(\'Raw Data\'!H2:H8761,\'Raw Data\'!F2:F8761,">"&A10)')
+
+        # Sum the number of hours <= 25F for output data
+        worksheet_bins.write_formula('C2', '=SUMIFS(\'Raw Data\'!L2:\'Raw Data\'!L8761,\'Raw Data\'!F2:F8761,"<="&A2)')
+        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for output data
+        for i in range(3,11):
+            worksheet_bins.write_formula(f'C{i}', f'=SUMIFS(\'Raw Data\'!L2:L8761,\'Raw Data\'!F2:F8761,">"&A{i-1},\'Raw Data\'!F2:F8761,"<="&A{i})')
+        # Sum the number of hours > 105F for output data
+        worksheet_bins.write_formula('C11', '=SUMIFS(\'Raw Data\'!L2:L8761,\'Raw Data\'!F2:F8761,">"&A10)')
+
+        # define the "Raw Data" sheet
         worksheet = writer.sheets['Raw Data']
-        # Add an Excel formula to the '< 25' column
 
-        
         # Tally weekday only hours
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'I{row_num}'  # Column H, current row
@@ -90,9 +129,23 @@ def write_to_excel(df, excel_file_path):
         # Tally occupied hours only
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'J{row_num}'  # Column H, current row
-            formula = f'=IF(AND(D{row_num}>=Sheet1!$C$3,D{row_num}<=Sheet1!$D$3),1,0)'
+            formula = f'=IF(AND(D{row_num}>=Sheet1!$A$6,D{row_num}<=Sheet1!$B$6),1,0)'
             worksheet.write_formula(cell_reference, formula)
         worksheet.write('J1', 'Occupied Hrs')
+
+        # Tally Dates Excluded hours only
+        for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
+            cell_reference = f'K{row_num}'  # Column H, current row
+            formula = f'=IF(OR(OR(B{row_num} < MONTH(Sheet1!$A$10), AND(B{row_num} = MONTH(Sheet1!$A$10), C{row_num} < DAY(Sheet1!$A$10))), OR(B{row_num} > MONTH(Sheet1!$B$10), AND(B{row_num} = MONTH(Sheet1!$B$10), C{row_num} > DAY(Sheet1!B$10)))),1,0)'
+            worksheet.write_formula(cell_reference, formula)
+        worksheet.write('K1', 'Dates Excluded')
+
+        # Tally Output results
+        for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
+            cell_reference = f'L{row_num}'  # Column H, current row
+            formula = f'=IF(AND(I{row_num}=1,J{row_num}=1,K{row_num}=1),1,0)'
+            worksheet.write_formula(cell_reference, formula)
+        worksheet.write('L1', 'Output')
 
         '''
         # Add an Excel formula to the '35 to 45' column
