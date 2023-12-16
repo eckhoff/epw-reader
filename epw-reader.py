@@ -77,7 +77,7 @@ def write_to_excel(df, excel_file_path):
             'valign': 'vcenter',
             'size': 12,
             'font_color': 'black',
-            'border': 1,
+            'border': 2,
             'border_color': 'black',
         })
 
@@ -88,7 +88,7 @@ def write_to_excel(df, excel_file_path):
             'valign': 'vcenter',
             'size': 12,
             'font_color': 'black',
-            'border': 1,
+            'border': 2,
             'border_color': 'black',
             'num_format': 'm/d'
         })
@@ -99,7 +99,7 @@ def write_to_excel(df, excel_file_path):
             'valign': 'vcenter',
             'size': 12,
             'font_color': 'black',
-            'border': 1,
+            'border': 2,
             'border_color': 'black',
         })
 
@@ -110,7 +110,7 @@ def write_to_excel(df, excel_file_path):
             'valign': 'vcenter',
             'size': 12,
             'font_color': 'black',
-            'border': 1,
+            'border': 2,
             'border_color': 'black',
         })
 
@@ -121,17 +121,40 @@ def write_to_excel(df, excel_file_path):
             'valign': 'vcenter',
             'size': 12,
             'font_color': 'black',
-            'border': 1,
+            'border': 2,
             'border_color': 'black',
             'num_format': '0.00%',
+        })
+
+        # Add format condition for summary titles
+        summary_title_format = workbook.add_format({
+            'bold': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'size': 12,
+            'font_color': 'black',
+            'border': 2,
+            'border_color': 'black',
+        })
+
+        # Add format condition for summary content
+        summary_content_format = workbook.add_format({
+            'bold': False,
+            'bg_color': '#f5cc76',
+            'align': 'center',
+            'valign': 'vcenter',
+            'size': 12,
+            'font_color': 'black',
+            'border': 2,
+            'border_color': 'black',
         })
 
 
         # Set the width of cells in Main tab
         worksheet_main.set_column('A:B', 14)
-        worksheet_main.set_column('E:E', 17)
-        worksheet_main.set_column('F:F', 13)
-        worksheet_main.set_column('G:G', 13)
+        worksheet_main.set_column('E:E', 22)
+        worksheet_main.set_column('F:F', 17)
+        worksheet_main.set_column('G:G', 17)
 
         # Write the default user input to include or exclude weekends from calculation
         # Include a dropdown list. Only allow "Yes" and "No" in this box
@@ -163,6 +186,17 @@ def write_to_excel(df, excel_file_path):
         worksheet_main.write('A10', '5/15', user_input_date_cells_format)
         worksheet_main.write('B10', '8/15', user_input_date_cells_format)
 
+        # Add the summary of data
+        worksheet_main.merge_range('E14:G14', 'Summary of Conditions Analyzed', summary_title_format)
+        worksheet_main.write('E15', 'Days of Week:', summary_title_format)
+        worksheet_main.write('E16', 'Hours of Day:', summary_title_format)
+        worksheet_main.write('E17', 'Date Range:', summary_title_format)
+        worksheet_main.write('E18', 'Total Hours Analyzed:', summary_title_format)
+        worksheet_main.merge_range('F15:G15', '=IF(A2="Yes", "Sun-M-Tu-W-Th-F-Sat", "M-Tu-W-Th-F")', summary_content_format)
+        worksheet_main.merge_range('F16:G16', '=IF(B6-A6=24, "24 Hours", TEXT(TIME(A6,0,0), "H:MM AM/PM")&" - "&TEXT(TIME(B6,0,0), "H:MM AM/PM"))', summary_content_format)
+        worksheet_main.merge_range('F17:G17', '=IF(AND(A10="",B10=""),"Jan 1 - Dec 31",IF(AND(MONTH(A10)=1,DAY(A10)=1),TEXT(B10 + 1, "MMM D")&" - "&"Dec 31","Jan 1 - "&TEXT(A10 - 1, "MMM D")&" and "&TEXT(B10 + 1, "MMM D")&" - "&"Dec 31"))', summary_content_format)
+        worksheet_main.merge_range('F18:G18', '=SUM(Raw_Data!L2:L8761)', summary_content_format)
+        
 
         # Write the Main spreadsheet output
         worksheet_main.write('E1', 'Temp Ranges', title_format)
