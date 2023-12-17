@@ -1,0 +1,5 @@
+# Ignore EPW files
+*.epw
+
+# Ignore Excel files
+*.xlsx

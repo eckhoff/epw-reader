@@ -298,8 +298,9 @@ def write_to_excel(df, excel_file_path):
         worksheet_raw_data.write('L1', 'Output')
 
 
-epw_file_path = 'USA_KS_Hutchinson.Muni.AP.724506_TMY3.epw'
-excel_file_path = 'output_file.xlsx'
+location = "USA_KS_Hutchinson.Muni.AP.724506_TMY3"
+epw_file_path = location + '.epw'
+excel_file_path = location + '.xlsx'
 
 df = read_epw_to_dataframe(epw_file_path)
 write_to_excel(df, excel_file_path)
