@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def read_epw_to_dataframe(epw_file_path):
@@ -29,8 +29,11 @@ def read_epw_to_dataframe(epw_file_path):
     
     # Add the 'Day of Week' column to the DataFrame
     df['Day of Week'] = day_of_week
+
+    # Dummy Cell - can use this column to add in RH% or another parameter later
     df['24H/365D'] = 1
 
+    # Change the following columns to int type. reads a string by default.
     df[['Year']] = df[['Year']].apply(pd.to_numeric, errors='coerce')
     df[['Month']] = df[['Month']].apply(pd.to_numeric, errors='coerce')
     df[['Day']] = df[['Day']].apply(pd.to_numeric, errors='coerce')
@@ -149,6 +152,16 @@ def write_to_excel(df, excel_file_path):
             'border_color': 'black',
         })
 
+        # Add bar chart to Main tab
+        chart = workbook.add_chart({'type': 'column'})
+        chart.add_series({'categories': ['Main', 1, 4, 10, 4],
+                          'values': ['Main', 1, 5, 10, 5],
+                          'name': 'Temperature Distribution',})
+        chart.set_size({'width': 800, 'height': 400})
+        chart.set_x_axis({'name': 'Temperature Ranges'})
+        chart.set_y_axis({'name': '# of Hours'})
+        chart.set_legend({'delete_series': [0]})
+        worksheet_main.insert_chart('I5', chart)
 
         # Set the width of cells in Main tab
         worksheet_main.set_column('A:B', 14)
@@ -167,7 +180,7 @@ def write_to_excel(df, excel_file_path):
                                               'error_message': 'Please select a valid option'})
 
         # Write the default user input to specify occupied hours
-        # Include a dropdown list. Only allow numbers 1-24
+        # Include a dropdown list. Only allow numbers 0-24
         hours_dropdown = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
         worksheet_main.merge_range('A4:B4', 'Occupied Hours', title_format)
         worksheet_main.write('A5', 'Start', normal_cells_format)
@@ -198,7 +211,7 @@ def write_to_excel(df, excel_file_path):
         worksheet_main.merge_range('F18:G18', '=SUM(Raw_Data!L2:L8761)', summary_content_format)
         
 
-        # Write the Main spreadsheet output
+        # Write the Main tab spreadsheet output titles
         worksheet_main.write('E1', 'Temp Ranges', title_format)
         worksheet_main.write('F1', '# of Hours', title_format)
         worksheet_main.write('G1', '% of Hours', title_format)
@@ -213,22 +226,22 @@ def write_to_excel(df, excel_file_path):
         worksheet_main.write_formula('E10', '=P2&" to "&Q2', data_cells_format)
         worksheet_main.write_formula('E11', '="Greater than "&Q2', data_cells_format)
 
-        # Write total number of hours in each bin to results
+        # Write the Main tab total number of hours in each bin
         for i in range(2,12):
             worksheet_main.write_formula(f'F{i}', f'=Bins!C{i}', data_cells_format)
 
-        # Write % of hours in each bin to results
+        # Write the Main tab % of hours in each bin to results
         for i in range(2,12):
             worksheet_main.write_formula(f'G{i}', f'=IF(sum(Raw_Data!L2:L8761) <> sum(F2:F11), "ERROR", F{i}/sum(F2:F11))', percent_cells_format)
 
-        # Specify the values for cells I2 to Q2 in the "Main" and format
+        # Specify the default temperature bins for cells I2 to Q2 in the Main tab and format
         bin_values = [25, 35, 45, 55, 65, 75, 85, 95, 105]
         worksheet_main.write_row('I2', bin_values, user_input_cells_format)
 
-        # Add a title to the bin temperaturs and format
+        # Add a title to the temperature bins in the Main tab and format
         worksheet_main.merge_range('I1:Q1', 'Temperature Bins', title_format)
 
-        # Copy bin values to "Bins" sheet
+        # Copy bin values to Bins tab
         bin_columns = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q']
         for row_num in range(2, len(bin_values) + 2):
             cell_reference = f'A{row_num}'  # Column A, current row
@@ -238,45 +251,46 @@ def write_to_excel(df, excel_file_path):
         worksheet_bins.write('B1', '24H/365D')
         worksheet_bins.write('C1', 'Output')
 
-        # Sum the number of hours <= 25F for 24H/365D data
+        # Sum the number of hours <= 25F for 24H/365D data in the Bins tab
         worksheet_bins.write_formula('B2', '=SUMIFS(Raw_Data!H2:Raw_Data!H8761,Raw_Data!F2:F8761,"<="&A2)')
-        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for 24H/365D data
+        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for 24H/365D data in the Bins tab
         for i in range(3,11):
             worksheet_bins.write_formula(f'B{i}', f'=SUMIFS(Raw_Data!H2:H8761,Raw_Data!F2:F8761,">"&A{i-1},Raw_Data!F2:F8761,"<="&A{i})')
-        # Sum the number of hours > 105F for 24H/365D data
+        # Sum the number of hours > 105F for 24H/365D data in the Bins tab
         worksheet_bins.write_formula('B11', '=SUMIFS(Raw_Data!H2:H8761,Raw_Data!F2:F8761,">"&A10)')
 
-        # Sum the number of hours <= 25F for output data
+        # Sum the number of hours <= 25F for output data in the Bins tab
         worksheet_bins.write_formula('C2', '=SUMIFS(Raw_Data!L2:Raw_Data!L8761,Raw_Data!F2:F8761,"<="&A2)')
-        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for output data
+        # Sum the number of hours 25-35, 35-45, 45-55, 55-65, 65-75, 75-85, 85-95, 95-105 for output data in the Bins tab
         for i in range(3,11):
             worksheet_bins.write_formula(f'C{i}', f'=SUMIFS(Raw_Data!L2:L8761,Raw_Data!F2:F8761,">"&A{i-1},Raw_Data!F2:F8761,"<="&A{i})')
-        # Sum the number of hours > 105F for output data
+        # Sum the number of hours > 105F for output data in the Bins tab
         worksheet_bins.write_formula('C11', '=SUMIFS(Raw_Data!L2:L8761,Raw_Data!F2:F8761,">"&A10)')
         
 
-        # Tally weekday only hours
+        # In Raw Data tab, check if weekends are include or not. Sum total number of hours in year.
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
-            cell_reference = f'I{row_num}'  # Column H, current row
+            cell_reference = f'I{row_num}'  # Column I, current row
             formula = f'=IF(Main!$A$2 = "No", IF(OR(G{row_num} = 3, G{row_num} = 4), 0,1), 1)'
             worksheet_raw_data.write_formula(cell_reference, formula)
         worksheet_raw_data.write('I1', 'Exclude Wkend')
 
-        # Tally occupied hours only
+        # In Raw Data tab, sum total hours during occupied hours.
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'J{row_num}'  # Column H, current row
             formula = f'=IF(AND(D{row_num}>=(Main!$A$6 + 1),D{row_num}<=Main!$B$6),1,0)'
             worksheet_raw_data.write_formula(cell_reference, formula)
         worksheet_raw_data.write('J1', 'Occupied Hrs')
 
-        # Tally Dates Excluded hours only
+        # In Raw Data tab, sum total hours excluding user defined excluded dates
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'K{row_num}'  # Column H, current row
             formula = f'=IF(OR(OR(B{row_num} < MONTH(Main!$A$10), AND(B{row_num} = MONTH(Main!$A$10), C{row_num} < DAY(Main!$A$10))), OR(B{row_num} > MONTH(Main!$B$10), AND(B{row_num} = MONTH(Main!$B$10), C{row_num} > DAY(Main!B$10)))),1,0)'
             worksheet_raw_data.write_formula(cell_reference, formula)
         worksheet_raw_data.write('K1', 'Dates Excluded')
 
-        # Tally Output results
+        # In Raw Data tab, sum total hours including all user input variables.
+        # including weekends, occupied hours, and excluded date range.
         for row_num in range(2, len(df) + 2):  # Start from row 2 (header is row 1)
             cell_reference = f'L{row_num}'  # Column H, current row
             formula = f'=IF(AND(I{row_num}=1,J{row_num}=1,K{row_num}=1),1,0)'
